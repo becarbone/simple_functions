@@ -17,7 +17,12 @@ if (choice == "Split Channels for Thresholding") {
 }
 
 function SplitChannel() {
+	waitForUser("Open control condition raw data/dendrites manually");
+	print("title	green	red	corrected_g	corrected_r");
 	for (i = nImages; i > 0; i--) {
+		x=0;
+		y=0;
+		z=0;
 		selectImage(i);
 		title = getTitle();
 		run("Split Channels");
@@ -29,6 +34,8 @@ function SplitChannel() {
 		setAutoThreshold("Default");
 		run("Threshold...");
 		waitForUser("set and record threshold");
+		getThreshold(z,x);
+		z=0;
 		selectImage(title+" (green)");
 		close();
 		run("In [+]");
@@ -37,16 +44,18 @@ function SplitChannel() {
 		run("Invert");
 		run("Threshold...");
 		waitForUser("set and record threshold");
+		getThreshold(z,y);
+		print(title+"	"+x+"	"+y+"	"+255-x+"	"+255-y);
 		close();
 	}
 }
 
 function unblind() {
-	waitForUser("Only do this on one folder at a time, otherwise it gets hairy");
+	waitForUser("Separate raw data/dendrites into subfolders\nof approx 20 images or it gets a little hectic\nno images should be open");
 	textdir = getDirectory("for the blind");
 	unblinddir = getDirectory("for the unblind");
 	textlist = getFileList(textdir);
-	list = "Blind,unblind";
+	list = "Blind"+"	unblind";
 	Dialog.create("images");
 	for(n=0;n<(textlist.length);n++) {
 		Dialog.addString(textlist[n],"ImageTitle");
@@ -54,7 +63,7 @@ function unblind() {
 	Dialog.show();
 	for(n=0;n<(textlist.length);n++) {
 		temp = Dialog.getString();
-		list = list + "\n"+ textlist[n]+","+ temp;
+		list = list + "\n"+ textlist[n]+"	"+ temp;
 		open(textdir+textlist[n]);
 		rename(temp);
 		saveAs("Tiff",unblinddir+temp);
@@ -64,13 +73,17 @@ function unblind() {
 }
 
 function DendriteSelect() {
-	imgdir=getDirectory("Choose folder to save dendrites in");
+	waitForUser("Open images manually");
+	imgdir=getDirectory("Choose folder to save raw data/dendrites in");
+	ROIdir=getDirectory("Choose folder to save ROI outlines in");
 	for (i = nImages; i > 0; i--) {
 		selectImage(i);
+		run("Properties...", "channels=1 slices=1 frames=1 unit=um pixel_width=0.1705 pixel_height=0.1705 voxel_depth=1");
 		Dialog.create("Are there Usable dendrites?");
 			Dialog.addString("","yes or no",30);
 			Dialog.show();
-		collect = Dialog.getString();	
+		collect = Dialog.getString();
+		roiManager("reset");	
 		if (collect == "yes") {
 			run("In [+]");
 			run("In [+]");
@@ -93,9 +106,10 @@ function DendriteSelect() {
 			setTool("polyline");
 			waitForUser ("Measure dendrite length");
 			run("Clear Results");
+			roiManager("Add");
 			run("Measure");
 			length = getResult("Length",0);
-			print(title+ "-1 "+length);	
+			print(title+ "-1	"+length);	
 			setTool("polygon");
 			waitForUser ("Select dendrite then hit OK");
 			run("Copy");
@@ -103,9 +117,10 @@ function DendriteSelect() {
 			setTool("polyline");
 			waitForUser ("Measure dendrite length");
 			run("Clear Results");
+			roiManager("Add");
 			run("Measure");
 			length = getResult("Length",0);
-			print(title+ "-2 "+length);	
+			print(title+ "-2	"+length);	
 			selectWindow("Clipboard-1");
 			saveAs("Tiff", imgdir+title+"-2");
 			close();
@@ -115,6 +130,7 @@ function DendriteSelect() {
 			selectWindow(title);
 			close();
 			collect = "reset";
+			roiManager("save",ROIdir+title+".zip");
 		} else {
 			close();
 			}
@@ -122,6 +138,7 @@ function DendriteSelect() {
 }
 
 function blinding() {
+	waitForUser("Unblinded images should be in one folder, make\nan empty folder for a blinded copy");
 	run("Clear Results");
 	row=0;
 	unblinddir=getDirectory("select unblinded image folder");
@@ -136,14 +153,12 @@ function blinding() {
 		numbah = random();
 		moNumbah = random();
 		blind = (numbah^2)/moNumbah;
-		blind1 = d2s(numbah,9);
-		rename(blind1);
 		run("Set Measurements...", "area perimeter area_fraction limit redirect=None decimal=9");
 		setResult("Title",row,title);
 		saveAs("Tiff", blinddir+blind);
-		blind2 = getTitle();
-		setResult("Blind",row,blind2);
-		selectImage(blind2);
+		blindresult = getTitle();
+		setResult("Blind",row,blindresult);
+		selectImage(blindresult);
 		close();
 		row=row+1;
 		}
