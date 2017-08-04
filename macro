@@ -1,10 +1,10 @@
 Dialog.create("Which simple function?");
-	options = newArray("Blind","Select Dendrites","Unblind","Split Channels for Thresholding");
+	options = newArray("Blind E18","Select Dendrites","Unblind","Split Channels for Thresholding","non-puncta analysis Blind");
 	Dialog.addChoice("Options",options);
 Dialog.show;
 choice = Dialog.getChoice;
-if (choice == "Blind") {
-	blinding();
+if (choice == "Blind E18") {
+	blindingE18();
 }
 if (choice == "Select Dendrites") {
 	DendriteSelect();
@@ -15,61 +15,40 @@ if (choice == "Unblind") {
 if (choice == "Split Channels for Thresholding") {
 	SplitChannel();
 }
-
-function SplitChannel() {
-	waitForUser("Open control condition raw data/dendrites manually");
-	print("title	green	red	corrected_g	corrected_r");
-	for (i = nImages; i > 0; i--) {
-		x=0;
-		y=0;
-		z=0;
-		selectImage(i);
-		title = getTitle();
-		run("Split Channels");
-		close();
-		run("In [+]");
-		run("In [+]");
-		run("In [+]");
-		run("Invert");
-		setAutoThreshold("Default");
-		run("Threshold...");
-		waitForUser("set and record threshold");
-		getThreshold(z,x);
-		z=0;
-		selectImage(title+" (green)");
-		close();
-		run("In [+]");
-		run("In [+]");
-		run("In [+]");
-		run("Invert");
-		run("Threshold...");
-		waitForUser("set and record threshold");
-		getThreshold(z,y);
-		print(title+"	"+x+"	"+y+"	"+255-x+"	"+255-y);
-		close();
-	}
+if (choice == "non-puncta analysis Blind") {
+	blinding();
 }
 
-function unblind() {
-	waitForUser("Separate raw data/dendrites into subfolders\nof approx 20 images or it gets a little hectic\nno images should be open");
-	textdir = getDirectory("for the blind");
-	unblinddir = getDirectory("for the unblind");
-	textlist = getFileList(textdir);
-	list = "Blind"+"	unblind";
-	Dialog.create("images");
-	for(n=0;n<(textlist.length);n++) {
-		Dialog.addString(textlist[n],"ImageTitle");
-	}
-	Dialog.show();
-	for(n=0;n<(textlist.length);n++) {
-		temp = Dialog.getString();
-		list = list + "\n"+ textlist[n]+"	"+ temp;
-		open(textdir+textlist[n]);
-		rename(temp);
-		saveAs("Tiff",unblinddir+temp);
+function blindingE18() {
+	waitForUser("Unblinded images should be in one folder, make\nan empty folder for a blinded copy");
+	run("Clear Results");
+	row=0;
+	unblinddir=getDirectory("select unblinded image folder");
+	unblindlist=getFileList(unblinddir);
+	blinddir=getDirectory("select blinded image folder");
+	blindlist=getFileList(blinddir);
+	for(i=0;i<unblindlist.length;i++)	{
+		img = unblindlist[i];
+		open(unblinddir+img);
+		title = getTitle();
+		tempTitle = substring(title,0,(lengthOf(title)-4));
+		numbah = random();
+		moNumbah = random();
+		blind = (numbah^2)/moNumbah;
+		run("Set Measurements...", "area perimeter area_fraction limit redirect=None decimal=9");
+		saveAs("Tiff", blinddir+blind);
+		blindresult = getTitle();
+		blindresultTemp = substring(blindresult,0,(lengthOf(blindresult)-4));
+		setResult("Title",row,tempTitle+"-1");
+		setResult("Blind",row,blindresultTemp+"-1");
+		row=row+1;
+		setResult("Title",row,tempTitle+"-2");
+		setResult("Blind",row,blindresultTemp+"-2");
+		selectImage(blindresult);
 		close();
-	}
-	print(list);
+		row=row+1;
+		}
+	saveAs("Results", blinddir+"blindkey.csv");
 }
 
 function DendriteSelect() {
@@ -99,34 +78,22 @@ function DendriteSelect() {
 			title=getTitle();
 			selectWindow(title);
 			//select dendrite
-			setTool("polygon");
-			waitForUser ("Select dendrite then hit OK");
-			run("Copy");
-			run("Internal Clipboard");
-			setTool("polyline");
-			waitForUser ("Measure dendrite length");
-			run("Clear Results");
-			roiManager("Add");
-			run("Measure");
-			length = getResult("Length",0);
-			print(title+ "-1	"+length);	
-			setTool("polygon");
-			waitForUser ("Select dendrite then hit OK");
-			run("Copy");
-			run("Internal Clipboard");
-			setTool("polyline");
-			waitForUser ("Measure dendrite length");
-			run("Clear Results");
-			roiManager("Add");
-			run("Measure");
-			length = getResult("Length",0);
-			print(title+ "-2	"+length);	
-			selectWindow("Clipboard-1");
-			saveAs("Tiff", imgdir+title+"-2");
-			close();
-			selectWindow("Clipboard");
-			saveAs("Tiff", imgdir+title+"-1");
-			close();
+			for(n=0;n<2;n++){
+				setTool("polygon");
+				waitForUser ("Select dendrite then hit OK");
+				run("Copy");
+				run("Internal Clipboard");
+				setTool("polyline");
+				waitForUser ("Measure dendrite length");
+				run("Clear Results");
+				roiManager("Add");
+				run("Measure");
+				length = getResult("Length",0);
+				print(title+ "-"+(n+1)+"	"+length);
+				selectWindow("Clipboard");
+				saveAs("Tiff", imgdir+title+"-"+(n+1));
+				close();
+			}				
 			selectWindow(title);
 			close();
 			collect = "reset";
@@ -137,8 +104,60 @@ function DendriteSelect() {
 	}
 }
 
-function blinding() {
-	waitForUser("Unblinded images should be in one folder, make\nan empty folder for a blinded copy");
+function unblind() {
+	waitForUser("Separate raw data/dendrites into subfolders\nof approx 20 images or it gets a little hectic\nno images should be open");
+	textdir = getDirectory("for the blind");
+	unblinddir = getDirectory("for the unblind");
+	textlist = getFileList(textdir);
+	list = "Blind"+"	unblind";
+	Dialog.create("images");
+	for(n=0;n<(textlist.length);n++) {
+		Dialog.addString(textlist[n],"ImageTitle");
+	}
+	Dialog.show();
+	for(n=0;n<(textlist.length);n++) {
+		temp = Dialog.getString();
+		list = list + "\n"+ textlist[n]+"	"+ temp;
+		open(textdir+textlist[n]);
+		rename(temp);
+		saveAs("Tiff",unblinddir+temp);
+		close();
+	}
+	print(list);
+}
+
+function SplitChannel() {
+	waitForUser("Open control condition RGB raw data/dendrites manually");
+	print("title	green	red	corrected_g	corrected_r");
+	for (i = nImages; i > 0; i--) {
+		x=0;
+		y=0;
+		z=0;
+		selectImage(i);
+		title = getTitle();
+		run("Split Channels");
+		selectImage(title+" (blue)");
+		close();
+		run("Set... ", "zoom=200");
+		run("Invert");
+		setAutoThreshold("Default");
+		run("Threshold...");
+		waitForUser("set and record threshold");
+		getThreshold(z,x);
+		z=0;
+		selectImage(title+" (green)");
+		close();
+		run("Set... ", "zoom=200");
+		run("Invert");
+		run("Threshold...");
+		waitForUser("set and record threshold");
+		getThreshold(z,y);
+		print(title+"	"+x+"	"+y+"	"+255-x+"	"+255-y);
+		close();
+	}
+}
+
+function blinding()	{
 	run("Clear Results");
 	row=0;
 	unblinddir=getDirectory("select unblinded image folder");
@@ -156,9 +175,9 @@ function blinding() {
 		run("Set Measurements...", "area perimeter area_fraction limit redirect=None decimal=9");
 		setResult("Title",row,title);
 		saveAs("Tiff", blinddir+blind);
-		blindresult = getTitle();
-		setResult("Blind",row,blindresult);
-		selectImage(blindresult);
+		blind2 = getTitle();
+		setResult("Blind",row,blind2);
+		selectImage(blind2);
 		close();
 		row=row+1;
 		}
