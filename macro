@@ -64,9 +64,7 @@ function DendriteSelect() {
 		collect = Dialog.getString();
 		roiManager("reset");	
 		if (collect == "yes") {
-			run("In [+]");
-			run("In [+]");
-			run("In [+]");
+			run("Set... ", "zoom=200");
 			//modify the name
 			title=getTitle();
 			Dialog.create("Title");
