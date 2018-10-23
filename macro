@@ -76,9 +76,9 @@ function DendriteSelect() {
 			title=getTitle();
 			selectWindow(title);
 			//select dendrite
-			for(n=0;n<2;n++){
+			for(n=0;n<2;n++)	{
 				setTool("polygon");
-				waitForUser ("Select dendrite then hit OK");
+				waitForUser ("Select dendrite "+n+" then hit OK");
 				run("Copy");
 				run("Internal Clipboard");
 				setTool("polyline");
@@ -140,7 +140,7 @@ function SplitChannel() {
 		run("Invert");
 		setAutoThreshold("Default");
 		run("Threshold...");
-		waitForUser("set and record threshold");
+		waitForUser("set threshold and hit ok");
 		getThreshold(z,x);
 		z=0;
 		selectImage(title+" (green)");
@@ -148,7 +148,7 @@ function SplitChannel() {
 		run("Set... ", "zoom=200");
 		run("Invert");
 		run("Threshold...");
-		waitForUser("set and record threshold");
+		waitForUser("set threshold and hit ok");
 		getThreshold(z,y);
 		print(title+"	"+x+"	"+y+"	"+255-x+"	"+255-y);
 		close();
@@ -162,8 +162,7 @@ function blinding()	{
 	unblindlist=getFileList(unblinddir);
 	blinddir=getDirectory("select blinded image folder");
 	blindlist=getFileList(blinddir);
-	for(i=0;i<unblindlist.length;i++)
-		{
+	for(i=0;i<unblindlist.length;i++)	{
 		img = unblindlist[i];
 		open(unblinddir+img);
 		title = getTitle();
@@ -178,6 +177,6 @@ function blinding()	{
 		selectImage(blind2);
 		close();
 		row=row+1;
-		}
+	}
 	saveAs("Results", blinddir+"blindkey.csv");
 }
