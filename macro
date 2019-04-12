@@ -57,7 +57,6 @@ function DendriteSelect() {
 	ROIdir=getDirectory("Choose folder to save ROI outlines in");
 	for (i = nImages; i > 0; i--) {
 		selectImage(i);
-		run("Properties...", "channels=1 slices=1 frames=1 unit=um pixel_width=0.1705 pixel_height=0.1705 voxel_depth=1");
 		Dialog.create("Are there Usable dendrites?");
 			Dialog.addString("","yes or no",30);
 			Dialog.show();
@@ -79,8 +78,7 @@ function DendriteSelect() {
 			for(n=0;n<2;n++)	{
 				setTool("polygon");
 				waitForUser ("Select dendrite "+n+" then hit OK");
-				run("Copy");
-				run("Internal Clipboard");
+				run("Duplicate...", "title=ROI");
 				setTool("polyline");
 				waitForUser ("Measure dendrite length");
 				run("Clear Results");
@@ -88,7 +86,7 @@ function DendriteSelect() {
 				run("Measure");
 				length = getResult("Length",0);
 				print(title+ "-"+(n+1)+"	"+length);
-				selectWindow("Clipboard");
+				selectWindow("ROI");
 				saveAs("Tiff", imgdir+title+"-"+(n+1));
 				close();
 			}				
